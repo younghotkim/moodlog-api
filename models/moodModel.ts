@@ -100,6 +100,22 @@ export const getColorKeywordCountByUserId = async (
   }
 };
 
+export const getMoodHistoryByUserId = async (
+  user_id: number,
+  callback: Callback<MoodMeter[]>
+): Promise<void> => {
+  try {
+    const result = await prisma.moodMeter.findMany({
+      where: { user_id: parseInt(String(user_id)) },
+      orderBy: { created_at: 'desc' },
+    });
+    callback(null, result);
+  } catch (error) {
+    console.error("Get mood history error:", error);
+    callback(error as Error, undefined);
+  }
+};
+
 export const getRecentMoodColorsByUserId = async (
   user_id: number,
   callback: Callback<MoodMeter[]>

@@ -3,7 +3,6 @@ import * as userModel from "../models/user";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { put } from "@vercel/blob";
 
 // JWT_SECRET 검증
 const JWT_SECRET = (() => {
@@ -33,61 +32,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       age,
       gender,
       birthdate,
+      profile_picture,
     } = req.body;
 
     if (!email || !password || !username) {
       res.status(400).json({ message: "필수 항목이 누락되었습니다." });
       return;
-    }
-
-    // 프로필 사진이 업로드된 경우 Vercel Blob에 저장
-    let profile_picture = req.body.profile_picture || null;
-
-    if (req.file) {
-      // 파일 타입 검증
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-      if (!allowedTypes.includes(req.file.mimetype)) {
-        res.status(400).json({
-          message:
-            "허용되지 않는 파일 형식입니다. JPEG, PNG, GIF, WebP만 허용됩니다.",
-        });
-        return;
-      }
-
-      // 파일 크기 검증 (10MB)
-      if (req.file.size > 10 * 1024 * 1024) {
-        res.status(400).json({
-          message: "프로필 사진 크기는 10MB를 초과할 수 없습니다.",
-        });
-        return;
-      }
-
-      try {
-        // 파일명 sanitization
-        const sanitizedFilename = req.file.originalname
-          .replace(/[^a-zA-Z0-9._-]/g, "_")
-          .replace(/\.{2,}/g, "_")
-          .substring(0, 255);
-
-        const blob = await put(
-          `profile-pictures/${Date.now()}-${sanitizedFilename}`,
-          req.file.buffer,
-          {
-            access: "public",
-            contentType: req.file.mimetype,
-          }
-        );
-        profile_picture = blob.url;
-      } catch (blobError) {
-        console.error("프로필 사진 업로드 오류:", blobError);
-        // Blob 업로드 실패해도 회원가입은 진행 (프로필 사진 없이)
-      }
     }
 
     const userData = {
@@ -99,7 +49,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       age,
       gender,
       birthdate,
-      profile_picture,
+      profile_picture: profile_picture || null,
     };
 
     userModel.insertUser(userData, (err, userId) => {
@@ -117,11 +67,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
-  console.log(req.body);
-
   userModel.select(email, password, async (err, user) => {
-    console.log(user);
-
     if (err) {
       console.error("Database error:", err);
       res.status(500).json({ message: "서버 오류" });
@@ -140,8 +86,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       JWT_SECRET,
       { expiresIn: "1h" }
     );
-
-    console.log("로그인 성공: ", user.profile_name, user.user_id);
 
     res.status(200).json({
       message: "로그인 성공",
@@ -270,4 +214,75 @@ export const checkDuplicateEmail = (
     }
     return callback(null, false);
   });
+};
+
+export const guestLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { device_id } = req.body;
+
+    if (!device_id) {
+      res.status(400).json({ message: "device_id가 필요합니다." });
+      return;
+    }
+
+    const guestEmail = `guest_${device_id}@moodlog.app`;
+
+    // 기존 게스트 유저 찾기
+    let user = await new Promise<any>((resolve, reject) => {
+      userModel.findByEmail(guestEmail, (err, user) => {
+        if (err) reject(err);
+        else resolve(user);
+      });
+    });
+
+    // 없으면 새로 생성
+    if (!user) {
+      const salt = crypto.randomBytes(16).toString("hex");
+      const password = crypto.randomBytes(32).toString("hex");
+      const hashedPassword = crypto
+        .pbkdf2Sync(password, salt, 10000, 64, "sha512")
+        .toString("hex");
+
+      const userId = await new Promise<number>((resolve, reject) => {
+        userModel.insertUser({
+          email: guestEmail,
+          password: hashedPassword,
+          salt,
+          username: `무드로거`,
+          profile_name: `무드로거`,
+          login_type: "guest",
+        } as any, (err, id) => {
+          if (err) reject(err);
+          else resolve(id!);
+        });
+      });
+
+      user = await new Promise<any>((resolve, reject) => {
+        userModel.get_user(userId, (err, u) => {
+          if (err) reject(err);
+          else resolve(u);
+        });
+      });
+    }
+
+    const token = jwt.sign(
+      { userId: user.user_id, profileName: user.profile_name || user.username },
+      JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.status(200).json({
+      message: "게스트 로그인 성공",
+      token,
+      user: {
+        user_id: user.user_id,
+        profile_name: user.profile_name,
+        email: user.email,
+        profile_picture: user.profile_picture,
+      },
+    });
+  } catch (error) {
+    console.error("게스트 로그인 오류:", error);
+    res.status(500).json({ message: "게스트 로그인 중 오류 발생", error });
+  }
 };

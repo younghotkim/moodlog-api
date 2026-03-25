@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import session from "express-session";
-import passport from "passport";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -12,16 +11,8 @@ import rateLimit from "express-rate-limit";
 dotenv.config();
 
 // 라우트 파일들
-import analyzeRoute from "./routes/analyze";
 import userRoutes from "./routes/user";
-import kakaoAuthRoutes from "./routes/kakao";
 import moodmeterRoutes from "./routes/moodRoutes";
-import diaryRoutes from "./routes/diaryRoutes";
-import uploadRoutes from "./routes/uploadRoutes";
-import emotionAnalysisRoutes from "./routes/emotionAnalysisRoutes";
-import chatRoutes from "./routes/chatRoutes";
-
-import "./config/passport";
 
 const app = express();
 
@@ -124,21 +115,9 @@ app.use(
   })
 );
 
-// Passport 초기화 및 세션 설정
-app.use(passport.initialize());
-app.use(passport.session());
-
 // 라우트 설정
-app.use("/api/analyze", analyzeRoute);
 app.use("/api", userRoutes);
-// Vercel Blob Storage 사용으로 로컬 업로드 폴더 정적 서빙 불필요
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api", uploadRoutes);
-app.use("/api", kakaoAuthRoutes);
 app.use("/api", moodmeterRoutes);
-app.use("/api", diaryRoutes);
-app.use("/api", emotionAnalysisRoutes);
-app.use("/api", chatRoutes);
 
 // 클라이언트와 서버 분리 배포 지원
 // SERVE_CLIENT_STATIC=true로 설정하면 서버에서 클라이언트 빌드 파일을 서빙 (통합 배포용)
@@ -179,7 +158,7 @@ if (
 // 기본 라우트 (API 서버 상태 확인용)
 app.get("/", (req, res) => {
   res.json({
-    message: "MaeGeul API Server",
+    message: "Mood Log API Server",
     version: "1.0.0",
     status: "running",
     mode:
@@ -201,10 +180,3 @@ app.listen(Number(PORT), HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
-
-// Vercel Blob Storage 사용으로 로컬 업로드 폴더는 더 이상 필요 없음
-// 개발 환경에서만 필요할 경우 주석 해제
-// const uploadPath = path.join(__dirname, "uploads");
-// if (!fs.existsSync(uploadPath)) {
-//   fs.mkdirSync(uploadPath);
-// }

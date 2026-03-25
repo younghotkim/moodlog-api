@@ -5,6 +5,7 @@ import {
   getColorKeywordCountByUserId,
   getLabelByUserId,
   getRecentMoodColorsByUserId,
+  getMoodHistoryByUserId,
 } from "../models/moodModel";
 
 export const createMoodMeter = (req: Request, res: Response): void => {
@@ -96,6 +97,22 @@ export const getColorKeywordCount = (req: Request, res: Response): void => {
   });
 };
 
+
+export const getMoodHistory = (req: Request, res: Response): void => {
+  const { user_id } = req.params;
+  if (!user_id) {
+    res.status(400).json({ error: "user_id가 누락되었습니다." });
+    return;
+  }
+  getMoodHistoryByUserId(parseInt(user_id), (err, result) => {
+    if (err) {
+      console.error("DB 조회 중 오류 발생:", err);
+      res.status(500).json({ error: "DB 조회 중 오류 발생" });
+      return;
+    }
+    res.status(200).json(result || []);
+  });
+};
 
 export const getRecentMoodColors = (req: Request, res: Response): void => {
   const { user_id } = req.params;
