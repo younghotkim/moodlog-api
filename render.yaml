@@ -4,8 +4,8 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
+    buildCommand: NODE_ENV=development npm ci && npm run build
+    startCommand: node dist/app.js
     envVars:
       - key: NODE_ENV
         value: production

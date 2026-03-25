@@ -14,6 +14,7 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
+    "types": ["node"],
     "sourceMap": true,
     "noImplicitAny": false
   },
