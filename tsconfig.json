@@ -9,13 +9,11 @@
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@types"],
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
-    "types": ["node"],
     "sourceMap": true,
     "noImplicitAny": false
   },
