@@ -20,6 +20,7 @@ model User {
   login_type      String    @default("local") @db.VarChar(50)
   profile_picture String?   @db.Text
   kakao_id        String?   @unique @db.VarChar(255)
+  toss_user_key   String?   @unique @db.VarChar(255)
   created_at      DateTime  @default(now())
 
   moodMeters      MoodMeter[]

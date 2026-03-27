@@ -13,6 +13,7 @@ dotenv.config();
 // 라우트 파일들
 import userRoutes from "./routes/user";
 import moodmeterRoutes from "./routes/moodRoutes";
+import tossAuthRoutes from "./routes/tossAuth";
 
 const app = express();
 
@@ -45,6 +46,7 @@ const authLimiter = rateLimit({
 app.use("/api/", limiter); // 모든 API 라우트에 적용
 app.use("/api/login", authLimiter); // 로그인 라우트에 추가 제한
 app.use("/api/register", authLimiter); // 회원가입 라우트에 추가 제한
+app.use("/api/toss-login", authLimiter); // 토스 로그인 라우트에 추가 제한
 
 // 미들웨어 설정
 // CORS 설정 - 클라이언트와 서버 분리 배포를 위한 환경 변수 지원
@@ -118,6 +120,7 @@ app.use(
 // 라우트 설정
 app.use("/api", userRoutes);
 app.use("/api", moodmeterRoutes);
+app.use("/api", tossAuthRoutes);
 
 // 클라이언트와 서버 분리 배포 지원
 // SERVE_CLIENT_STATIC=true로 설정하면 서버에서 클라이언트 빌드 파일을 서빙 (통합 배포용)
